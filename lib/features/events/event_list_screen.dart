@@ -225,6 +225,24 @@ class EventListScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text('Participantes: \\${participants.length}'),
+              if (isOrganizer) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _navigateToEditEvent(context, event),
+                        icon: const Icon(Icons.edit),
+                        label: const Text('Editar'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
