@@ -25,6 +25,7 @@ class EventModel {
   });
 
   factory EventModel.fromMap(Map<String, dynamic> map, String documentId) {
+    print('Map recebido no fromMap: ' + map.toString());
     // Validação defensiva dos campos essenciais
     if (map['title'] == null || map['dateTime'] == null || map['location'] == null || map['createdBy'] == null || map['createdAt'] == null) {
       throw Exception('Documento inválido para EventModel: campos essenciais ausentes.');

@@ -15,6 +15,7 @@ class EventListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final eventController = Provider.of<EventController>(context);
     final authController = Provider.of<AuthController>(context);
+    final currentUserId = authController.currentUser?.uid;
     final user = Provider.of<UserModel?>(context);
     final isOrganization = user?.isOrganization ?? false;
 
@@ -56,9 +57,14 @@ class EventListScreen extends StatelessWidget {
     AuthController authController,
     UserModel? user,
   ) {
+    final currentUserId = authController.currentUser?.uid;
+    print('currentUserId: $currentUserId');
     return StreamBuilder<List<EventModel>>(
-      stream: eventController.getEventsByUser(user?.uid ?? ''),
+      stream: eventController.getEventsByUser(currentUserId ?? ''),
       builder: (context, snapshot) {
+        print('Snapshot connectionState: \\${snapshot.connectionState}');
+        print('Snapshot hasError: \\${snapshot.hasError}');
+        print('Snapshot data: \\${snapshot.data}');
         if (snapshot.hasError) {
           return Center(
             child: Column(
@@ -78,7 +84,6 @@ class EventListScreen extends StatelessWidget {
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () {
-                    // Recarregar a tela
                     Navigator.pushReplacementNamed(context, '/eventlist');
                   },
                   child: const Text('Tentar Novamente'),
@@ -102,8 +107,10 @@ class EventListScreen extends StatelessWidget {
         }
 
         final events = snapshot.data ?? [];
+        print('Eventos recebidos: \\${events.length}');
 
         if (events.isEmpty) {
+          print('Nenhum evento encontrado.');
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -144,6 +151,7 @@ class EventListScreen extends StatelessWidget {
           itemCount: events.length,
           itemBuilder: (context, index) {
             final event = events[index];
+            print('Construindo card para evento: \\${event.id}');
             return _buildEventCard(context, event, eventController, authController, user);
           },
         );
@@ -158,15 +166,15 @@ class EventListScreen extends StatelessWidget {
     AuthController authController,
     UserModel? user,
   ) {
-    // Checagem defensiva para todos os campos
-    final title = (event.title).isNotEmpty ? event.title : 'Evento sem título';
-    final location = (event.location).isNotEmpty ? event.location : 'Local não informado';
+    print('Event carregado: $event');
+    final title = (event.title ?? '').isNotEmpty ? event.title : 'Evento sem título';
+    final location = (event.location ?? '').isNotEmpty ? event.location : 'Local não informado';
     final dateTime = event.dateTime;
     final description = event.description ?? '';
     final participants = event.participants ?? <String>[];
 
-    // Se algum campo essencial estiver faltando, mostre um card de aviso
     if (title.isEmpty || location.isEmpty || dateTime == null) {
+      print('Evento com dados inválidos ou incompletos: $event');
       return Card(
         color: Colors.red[50],
         margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
@@ -194,146 +202,29 @@ class EventListScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Text(title),
+              const SizedBox(height: 8),
+              Text(description),
+              const SizedBox(height: 8),
               Row(
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                location,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[600],
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (isOrganizer)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.blue,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Text(
-                        'ORGANIZADOR',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
+                  const Icon(Icons.location_on, size: 16),
                   const SizedBox(width: 4),
-                  Text(
-                    dateTime != null
-                        ? '${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')}/${dateTime.year} '
-                          '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}'
-                        : 'Data não informada',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  const Spacer(),
-                  Icon(Icons.people, size: 16, color: Colors.grey[600]),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${participants.length}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
-                  ),
+                  Expanded(child: Text(location)),
                 ],
               ),
-              if (description.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(
-                  description,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[700],
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Row(
                 children: [
-                  if (!user!.isOrganization && !isOrganizer)
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _handleParticipation(
-                          context,
-                          eventController,
-                          event,
-                          currentUserId!,
-                          isParticipating,
-                        ),
-                        icon: Icon(isParticipating ? Icons.exit_to_app : Icons.add),
-                        label: Text(isParticipating ? 'Sair' : 'Participar'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: isParticipating ? Colors.red : Colors.green,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                    ),
-                  if (isOrganizer) ...[
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _navigateToEditEvent(context, event),
-                        icon: const Icon(Icons.edit),
-                        label: const Text('Editar'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _confirmDelete(context, eventController, event.id),
-                        icon: const Icon(Icons.delete),
-                        label: const Text('Excluir'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
+                  const Icon(Icons.calendar_today, size: 16),
+                  const SizedBox(width: 4),
+                  Text(dateTime != null
+                      ? DateFormat('dd/MM/yyyy HH:mm').format(dateTime)
+                      : 'Data não informada'),
                 ],
               ),
+              const SizedBox(height: 8),
+              Text('Participantes: \\${participants.length}'),
             ],
           ),
         ),

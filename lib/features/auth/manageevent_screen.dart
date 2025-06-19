@@ -71,6 +71,16 @@ class _ManageEventsScreenState extends State<ManageEventsScreen> {
     final authController = Provider.of<AuthController>(context);
     final currentUserId = authController.currentUser?.uid;
 
+    print('currentUserId: $currentUserId');
+
+    if (currentUserId == null) {
+      // Usuário ainda não carregado, exibe loading
+      print('Usuário ainda não carregado, exibindo loading');
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gerenciar Eventos'),
@@ -120,12 +130,15 @@ class _ManageEventsScreenState extends State<ManageEventsScreen> {
                 _isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : StreamBuilder<List<EventModel>>(
-                      stream: eventController.getEvents(),
+                      stream: eventController.getEventsByUser(currentUserId ?? ''),
                       builder: (context, snapshot) {
+                        print('Snapshot connectionState: \\${snapshot.connectionState}');
+                        print('Snapshot hasError: \\${snapshot.hasError}');
+                        print('Snapshot data: \\${snapshot.data}');
                         if (snapshot.hasError) {
                           return Center(
                             child: Text(
-                              'Erro ao carregar eventos: ${snapshot.error}',
+                              'Erro ao carregar eventos: \\${snapshot.error}',
                               style: const TextStyle(fontSize: 16),
                             ),
                           );
@@ -139,19 +152,21 @@ class _ManageEventsScreenState extends State<ManageEventsScreen> {
                         }
 
                         final events = snapshot.data ?? [];
+                        print('Eventos recebidos: \\${events.length}');
                         final filteredEvents =
                             events.where((event) {
                               final query = _searchQuery.toLowerCase();
-                              return event.title.toLowerCase().contains(
-                                    query,
-                                  ) ||
-                                  event.description.toLowerCase().contains(
-                                    query,
-                                  ) ||
-                                  event.location.toLowerCase().contains(query);
+                              final title = event.title ?? '';
+                              final description = event.description ?? '';
+                              final location = event.location ?? '';
+                              return title.toLowerCase().contains(query) ||
+                                  description.toLowerCase().contains(query) ||
+                                  location.toLowerCase().contains(query);
                             }).toList();
+                        print('Eventos filtrados: \\${filteredEvents.length}');
 
                         if (filteredEvents.isEmpty) {
+                          print('Nenhum evento encontrado após filtro.');
                           return _buildEmptyState();
                         }
 
@@ -160,6 +175,7 @@ class _ManageEventsScreenState extends State<ManageEventsScreen> {
                           itemCount: filteredEvents.length,
                           itemBuilder: (context, index) {
                             final event = filteredEvents[index];
+                            print('Construindo card para evento: \\${event.id}');
                             return _buildEventCard(
                               context,
                               eventController,
@@ -209,6 +225,7 @@ class _ManageEventsScreenState extends State<ManageEventsScreen> {
     EventController controller,
     EventModel event,
   ) {
+    print('Event carregado: $event');
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
@@ -220,24 +237,16 @@ class _ManageEventsScreenState extends State<ManageEventsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      event.title ?? '',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ),
-                  _buildEventMenu(context, controller, event.id),
-                ],
+              Text(
+                event.title ?? '',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
               ),
               const SizedBox(height: 8),
               Text(event.description ?? ''),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Row(
                 children: [
                   const Icon(Icons.location_on, size: 16),
@@ -253,6 +262,14 @@ class _ManageEventsScreenState extends State<ManageEventsScreen> {
                   Text(DateFormat('dd/MM/yyyy HH:mm').format(event.dateTime ?? DateTime.now())),
                 ],
               ),
+              const SizedBox(height: 8),
+              Text('Criado por: ${event.createdBy}'),
+              const SizedBox(height: 4),
+              Text('Criado em: ${DateFormat('dd/MM/yyyy HH:mm').format(event.createdAt ?? DateTime.now())}'),
+              const SizedBox(height: 4),
+              Text('Status: ${event.status}'),
+              const SizedBox(height: 4),
+              Text('Participantes: ${event.participants.length}'),
             ],
           ),
         ),
