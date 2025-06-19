@@ -203,6 +203,15 @@ class EventListScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(title),
+              const SizedBox(height: 4),
+              Text(
+                event.status == 'canceled' ? 'CANCELADO' : 'ATIVO',
+                style: TextStyle(
+                  color: event.status == 'canceled' ? Colors.red : Colors.green,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
               const SizedBox(height: 8),
               Text(description),
               const SizedBox(height: 8),
@@ -236,6 +245,18 @@ class EventListScreen extends StatelessWidget {
                         label: const Text('Editar'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _confirmCancelEvent(context, eventController, event),
+                        icon: const Icon(Icons.delete),
+                        label: const Text('Cancelar'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
                           foregroundColor: Colors.white,
                         ),
                       ),
@@ -383,6 +404,50 @@ class EventListScreen extends StatelessWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Erro ao excluir: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _confirmCancelEvent(BuildContext context, EventController eventController, EventModel event) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar cancelamento'),
+        content: const Text('Tem certeza que deseja cancelar este evento?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Confirmar',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        final canceledEvent = event.copyWith(status: 'canceled');
+        await eventController.updateEvent(canceledEvent);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Evento cancelado com sucesso!')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erro ao cancelar: \\${e.toString()}'),
               backgroundColor: Colors.red,
             ),
           );
