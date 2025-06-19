@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/controllers/auth_controller.dart';
 import '../../../core/models/user_model.dart';
 import '../../../core/services/firebase_auth_service.dart';
+import 'package:flutter_multi_formatter/flutter_multi_formatter.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -160,6 +161,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     hintText: 'Digite seu CPF',
                   ),
                   keyboardType: TextInputType.number,
+                  inputFormatters: [MaskedInputFormatter('000.000.000-00')],
                   validator: !_isOrganization
                       ? (value) {
                           if (value == null || value.isEmpty) {
@@ -178,6 +180,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     hintText: 'Digite o CNPJ da organização',
                   ),
                   keyboardType: TextInputType.number,
+                  inputFormatters: [MaskedInputFormatter('00.000.000/0000-00')],
                   validator: _isOrganization
                       ? (value) {
                           if (value == null || value.isEmpty) {

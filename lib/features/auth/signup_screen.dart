@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/controllers/auth_controller.dart';
 import '../../shared/utils/validators.dart';
+import 'package:flutter_multi_formatter/flutter_multi_formatter.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -87,6 +88,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   controller: _cpfController,
                   decoration: const InputDecoration(labelText: 'CPF*'),
                   keyboardType: TextInputType.number,
+                  inputFormatters: [MaskedInputFormatter('000.000.000-00')],
                   validator: !_isOrganization ? Validators.validateCPF : null,
                 ),
               ],
@@ -96,6 +98,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   controller: _cnpjController,
                   decoration: const InputDecoration(labelText: 'CNPJ*'),
                   keyboardType: TextInputType.number,
+                  inputFormatters: [MaskedInputFormatter('00.000.000/0000-00')],
                   validator: _isOrganization ? Validators.validateCNPJ : null,
                 ),
               ],
